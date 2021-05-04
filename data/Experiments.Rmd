@@ -83,7 +83,9 @@ table
 ```{r}
 library(rugarch)
 library(xdcclarge)
-test   = read.csv('./test_500_1260.csv')
+test_data   = read.csv('./test_500_1260.csv')
+n = 500
+Rtn = test_data[1:1260, 2:(n+1)]
 # Step 1:GARCH Parameter Estimation with rugarch
 spec = ugarchspec(variance.model=list(
 model = "sGARCH", garchOrder = c(1, 1), submodel = NULL, 
@@ -96,15 +98,18 @@ distribution.model = "norm",
 start.pars = list(), fixed.pars = list())
 
 mspec = multispec(replicate(spec, n=n))
-fitlist = multifit(multispec=mspec, 
-        data = Rtn) 
+fitlist = multifit(multispec=mspec, solver="hybrid",
+          data = Rtn) 
+
 ht<-sigma(fitlist)^2 
 residuals<-residuals(fitlist)
 
+
+
 # Step 2:DCC-GARCH Parameter Estimation with xdcclarge
-DCC<-dcc_estimation(ini.para=c(0.05,0.93) ,ht ,residuals) 
+DCC<-dcc_estimation(ini.para=c(0.05,0.93) , ht, residuals) 
 #Time varying correlation matrix Rt at time t 
-(Rt<-matrix(DCC$dcc_Rt,n,n))
+(Rt<-matrix(DCC$dcc_Rt, n, n))
 
 #If you want Rt at time t-s,then
 
