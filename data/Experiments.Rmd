@@ -1,0 +1,112 @@
+---
+title: "covariance portfolio Notebook"
+output: html_notebook
+---
+
+
+
+```{r}
+data = read.csv("./df_rolls.csv", sep=",")
+df_rolls <- as.matrix(data)
+```
+
+
+# 1/N sample covariance portfolio
+```{r}
+
+res_portfolio <- function(res_pre, ws){
+  res <- res_pre%*%ws
+  return(res)
+}
+
+ew_portfolio <- function(df_rolls, N){
+  month_days = 21
+  res_all = c()
+  for(i in c(1:190)){
+    st_sam  = (i-1) * 1281 + 1
+    ed_sam = st_sam + 1260 - 1
+    st_pre = ed_sam + 1
+    ed_pre = st_pre + 21 - 1
+    res_pre = df_rolls[st_pre:ed_pre, 2:(N+1)]
+    ews = matrix(rep(1/N, times=N))
+    res_i = res_pre %*% ews
+    res_all <- c(res_all, res_i)}
+  return(res_all)}
+
+samcov_portfolio <- function(df_rolls, N){
+  month_days = 21
+  res_all = c()
+  for(i in c(1:190)){
+    st_sam  = (i-1) * 1281 + 1
+    ed_sam = st_sam + 1260 - 1
+    st_pre = ed_sam + 1
+    ed_pre = st_pre + 21 - 1
+    res_sam = df_rolls[st_sam:ed_sam, 2:(N+1)]
+    res_pre = df_rolls[st_pre:ed_pre, 2:(N+1)]
+    sam_cov = cov(res_sam)
+    ws = optimalPortfolio(Sigma=sam_cov, 
+         control=list(type='minvol', constraint='lo'))
+    ws = matrix(ws)
+    res_i = res_pre %*% ws
+    res_all <- c(res_all, res_i)
+  }
+  return(res_all)
+}
+
+indicators <- function(all_res){
+  AV = round(mean(all_res)*252*100, 4)
+  SD = round(cov(all_res, all_res)**0.5*252**0.5*100, 4)
+  IR = round(AV/SD, 4)
+  return(c(AV, SD, IR))
+}
+```
+
+```{r}
+# computing the returns
+all_res_ew = ew_portfolio(df_rolls, 500)
+all_sam_ew = samcov_portfolio(df_rolls, 500)
+```
+
+```{r}
+
+result_ew = indicators(all_res_ew)
+result_sa = indicators(all_sam_ew)
+table <- (rbind(result_ew, result_sa))
+colnames(table) <- c('AV','SD','IR')
+rownames(table) <- c('equal weights','sample covariance')
+table
+```
+
+
+# NL-DCC portfoilio
+
+```{r}
+library(rugarch)
+library(xdcclarge)
+test   = read.csv('./test_500_1260.csv')
+# Step 1:GARCH Parameter Estimation with rugarch
+spec = ugarchspec(variance.model=list(
+model = "sGARCH", garchOrder = c(1, 1), submodel = NULL, 
+external.regressors = NULL, variance.targeting = FALSE), 
+mean.model = list(armaOrder = c(1, 1), 
+include.mean = TRUE, archm = FALSE, 
+archpow = 1, arfima = FALSE, 
+external.regressors = NULL, archex = FALSE), 
+distribution.model = "norm", 
+start.pars = list(), fixed.pars = list())
+
+mspec = multispec(replicate(spec, n=n))
+fitlist = multifit(multispec=mspec, 
+        data = Rtn) 
+ht<-sigma(fitlist)^2 
+residuals<-residuals(fitlist)
+
+# Step 2:DCC-GARCH Parameter Estimation with xdcclarge
+DCC<-dcc_estimation(ini.para=c(0.05,0.93) ,ht ,residuals) 
+#Time varying correlation matrix Rt at time t 
+(Rt<-matrix(DCC$dcc_Rt,n,n))
+
+#If you want Rt at time t-s,then
+
+```
+
