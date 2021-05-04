@@ -68,7 +68,7 @@ indicators <- function(all_res){
 ```{r}
 # computing the returns
 all_res_ew = ew_portfolio(df_rolls, 500, 1260, 21)
-all_res_ew = samcov_portfolio(df_rolls, 500, 1260, 21)
+all_res_sam = samcov_portfolio(df_rolls, 500, 1260, 21)
 ```
 
 ```{r}
