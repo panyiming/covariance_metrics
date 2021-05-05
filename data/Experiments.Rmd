@@ -7,6 +7,10 @@ output: html_notebook
 ```{r}
 library(rugarch)
 library(xdcclarge)
+library(RiskPortfolios)
+library(rmgarch)
+library(Matrix)
+library('matrixcalc')
 ```
 
 
@@ -17,7 +21,7 @@ df_rolls <- as.matrix(data)
 ```
 
 
-# 1/N sample covariance portfolio
+# 1/N sample and covariance portfolio
 ```{r}
 
 res_portfolio <- function(res_pre, ws){
@@ -48,6 +52,10 @@ samcov_portfolio <- function(df_rolls, N, days, month_days){
     res_sam = df_rolls[st_sam:ed_sam, 2:(N+1)]
     res_pre = df_rolls[st_pre:ed_pre, 2:(N+1)]
     sam_cov = cov(res_sam)
+    if(is.positive.definite(sam_cov, tol=1e-8)==FALSE){
+      cov_temp = nearPD(sam_cov, ensureSymmetry=FALSE)
+      sam_cov = matrix(cov_temp$mat)
+    }
     ws = optimalPortfolio(Sigma=sam_cov, 
          control=list(type='minvol', constraint='lo'))
     ws = matrix(ws)
@@ -129,6 +137,7 @@ return(cov_all)
 dccnl_portfolio <- function(df_rolls, N, days, month_days){
   res_all = c()
   for(i in c(1:190)){
+    print(i)
     st_sam  = (i-1) * days + month_days + 1
     ed_sam = st_sam + days - 1
     st_pre = ed_sam + 1
@@ -147,8 +156,6 @@ dccnl_portfolio <- function(df_rolls, N, days, month_days){
 
 #If you want Rt at time t-s,then
 ```
-
-
 
 ```{r}
 n = 10
