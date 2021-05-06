@@ -138,6 +138,7 @@ dccnl_portfolio <- function(df_rolls, N, days, month_days){
   res_all = c()
   for(i in c(1:190)){
     print(i)
+    t1 = Sys.time()
     st_sam  = (i-1) * days + month_days + 1
     ed_sam = st_sam + days - 1
     st_pre = ed_sam + 1
@@ -150,6 +151,8 @@ dccnl_portfolio <- function(df_rolls, N, days, month_days){
     ws = matrix(ws)
     res_i = res_pre %*% ws
     res_all <- c(res_all, res_i)
+    t2 = Sys.time()
+    print(t2-t2)
   }
   return(res_all)
 }
@@ -171,6 +174,6 @@ print(t2-t1)
 
 
 ```{r}
-all_res_dccnl = dccnl_portfolio(df_rolls, 10, 100, 21)
+all_res_dccnl = dccnl_portfolio(df_rolls, 500, 1260, 21)
 ```
 
