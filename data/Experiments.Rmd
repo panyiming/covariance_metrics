@@ -14,10 +14,32 @@ library('matrixcalc')
 ```
 
 
+# test speed
 
+```{r}
+n = 10
+days = 100
+test_data = read.csv('./test_500_1260.csv')
+Rtn = test_data[1:days, 2:(n+1)]
+t1 = Sys.time()
+cov_pred = dcc_cov_pre(Rtn, n)
+t2 = Sys.time()
+print(t2-t1)
+```
+
+
+
+
+# loading data
 ```{r}
 data = read.csv("./df_rolls.csv", sep=",")
 df_rolls <- as.matrix(data)
+```
+
+
+```{r}
+data_630 = read.csv("./df_rolls_500_630.csv", sep=",")
+df_rolls_630 <- as.matrix(data_630)
 ```
 
 
@@ -29,10 +51,10 @@ res_portfolio <- function(res_pre, ws){
   return(res)
 }
 
-ew_portfolio <- function(df_rolls, N, days, month_days){
+ew_portfolio <- function(df_rolls, N, days, month_days, num_trade){
   res_all = c()
-  for(i in c(1:190)){
-    st_sam  = (i-1) * days + month_days + 1
+  for(i in c(1:num_trade)){
+    st_sam  = (i-1) * (days + month_days) + 1
     ed_sam = st_sam + days - 1
     st_pre = ed_sam + 1
     ed_pre = st_pre + month_days - 1
@@ -42,10 +64,10 @@ ew_portfolio <- function(df_rolls, N, days, month_days){
     res_all <- c(res_all, res_i)}
   return(res_all)}
 
-samcov_portfolio <- function(df_rolls, N, days, month_days){
+samcov_portfolio <- function(df_rolls, N, days, month_days, num_trade){
   res_all = c()
-  for(i in c(1:190)){
-    st_sam  = (i-1) * days + month_days + 1
+  for(i in c(1:num_trade)){
+    st_sam  = (i-1) * (days + month_days) + 1
     ed_sam = st_sam + days - 1
     st_pre = ed_sam + 1
     ed_pre = st_pre + month_days - 1
@@ -75,11 +97,11 @@ indicators <- function(all_res){
 
 ```{r}
 # computing the returns
-all_res_ew = ew_portfolio(df_rolls, 500, 1260, 21)
-all_res_sam = samcov_portfolio(df_rolls, 500, 1260, 21)
-```
+num_trade = 190
+all_res_ew = ew_portfolio(df_rolls, 500, 1260, 21, num_trade)
+indicators(all_res_ew)
+#all_res_sam = samcov_portfolio(df_rolls, 200, 1260, 21, num_trade)
 
-```{r}
 
 result_ew = indicators(all_res_ew)
 result_sa = indicators(all_sam_ew)
@@ -88,6 +110,9 @@ colnames(table) <- c('AV','SD','IR')
 rownames(table) <- c('equal weights','sample covariance')
 table
 ```
+
+
+
 
 
 # NL-DCC portfoilio
@@ -134,46 +159,48 @@ return(cov_all)
 }
 
 
-dccnl_portfolio <- function(df_rolls, N, days, month_days){
+dccnl_portfolio <- function(df_rolls, N, days, month_days, num_trade, root_dir){
   res_all = c()
-  for(i in c(1:190)){
+  for(i in c(1:num_trade)){
     print(i)
     t1 = Sys.time()
-    st_sam  = (i-1) * days + month_days + 1
+    st_sam  = (i-1) * (days + month_days) + 1
     ed_sam = st_sam + days - 1
     st_pre = ed_sam + 1
     ed_pre = st_pre + month_days - 1
+    print(c(st_sam, ed_sam, st_pre, ed_pre))
     res_sam = df_rolls[st_sam:ed_sam, 2:(N+1)]
     res_pre = df_rolls[st_pre:ed_pre, 2:(N+1)]
     cov_pred = dcc_cov_pre(res_sam, N)
-    ws = optimalPortfolio(Sigma=cov_pred, 
-         control=list(type='minvol', constraint='lo'))
-    ws = matrix(ws)
-    res_i = res_pre %*% ws
-    res_all <- c(res_all, res_i)
+    file_path = paste(root_dir, i, '.csv', sep='')
+    write.table(cov_pred,  file=file_path, row.names = TRUE, col.names =TRUE, sep=',')
+    #ws = optimalPortfolio(Sigma=cov_pred, 
+    #     control=list(type='minvol', constraint='lo'))
+    #ws = matrix(ws)
+    #res_i = res_pre %*% ws
+    #res_all <- c(res_all, res_i)
     t2 = Sys.time()
-    print(t2-t2)
+    print(t2-t1)
   }
   return(res_all)
 }
-
-#If you want Rt at time t-s,then
 ```
 
+
 ```{r}
-n = 10
-days = 100
-test_data = read.csv('./test_500_1260.csv')
-Rtn = test_data[1:days, 2:(n+1)]
-t1 = Sys.time()
-cov_pred = dcc_cov_pre(Rtn, n)
-t2 = Sys.time()
-print(t2-t1)
+cov_pred = dcc_cov_pre(res_sam, N)
 ```
 
 
 
 ```{r}
-all_res_dccnl = dccnl_portfolio(df_rolls, 500, 1260, 21)
+all_res_dccnl = dccnl_portfolio(df_rolls, 100, 1260, 21)
+```
+
+
+```{r}
+num_trade = 190
+root_dir = '~/Desktop/courses_term3/Master_project/data/cov_200_dcc/'
+all_res_dccnl_12690_100 = dccnl_portfolio(df_rolls, 200, 1260, 21, num_trade, root_dir)
 ```
 
