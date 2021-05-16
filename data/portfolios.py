@@ -282,48 +282,48 @@ def regression(code_shares, sp_data, df_return,
         trading_date_i = st_id + sam_size
         ff_ls = ['Mkt-RF', 'SMB', 'HML', 'RMW', 'CMA']
         # sample covariance matrix of factors
-        ff_vol1[num_i, :] = np.cov(np.array(ffdata[ff_ls[0]][:trading_date_i]).transpose())
-        ff_vol5[num_i*5:num_i*5+5, :] = np.cov(np.array(ffdata[ff_ls][:trading_date_i]).transpose())
+        ff_vol1[num_i, :] = np.cov(np.array(ffdata[ff_ls[0]][st_id:trading_date_i]).transpose())
+        ff_vol5[num_i*5:num_i*5+5, :] = np.cov(np.array(ffdata[ff_ls][st_id:trading_date_i]).transpose())
 
         # DCC for estimation of factor covariance matrix:
         #cov_avg = dcc_garch_pred(ffdata[ff_ls][:trading_date_i])
         #ff_vol_dcc1[num_i, :] = cov_avg[1, 1]
         #ff_vol_dcc5[num_i*5:num_i+5, :] = cov_avg
 
-        num_j = 0
-        for code_i in code_N:
-            st_date =np.where(df_return[code_i] > -5)[0][0]
-            # five factors regression
-            Y5 = list(df_return[code_i][st_date:trading_date_i] - ffdata['RF'][st_date:trading_date_i])
-            X5 = ffdata[ff_ls][st_date:trading_date_i]
-            X5 = sm.add_constant(X5)
-            OLS_model5 = sm.OLS(Y5, X5).fit()
-            l = len(OLS_model5.resid)
-            residual_mat5[num_i*500+num_j, :] = list(OLS_model5.resid)[l-1260:l]
-            params_mat5[num_i*500+num_j, :] = list(OLS_model5.params)[1:]
+        #num_j = 0
+        #for code_i in code_N:
+        #    st_date =np.where(df_return[code_i] > -5)[0][0]
+        #    # five factors regression
+        #    Y5 = list(df_return[code_i][st_id:trading_date_i] - ffdata['RF'][st_id:trading_date_i])
+        #    X5 = ffdata[ff_ls][st_id:trading_date_i]
+        #    X5 = sm.add_constant(X5)
+        #    OLS_model5 = sm.OLS(Y5, X5).fit()
+        #    l = len(OLS_model5.resid)
+        #    residual_mat5[num_i*500+num_j, :] = list(OLS_model5.resid)[l-1260:l]
+        #    params_mat5[num_i*500+num_j, :] = list(OLS_model5.params)[1:]
 
             # one factor regression
-            Y1 = list(df_return[code_i][st_date:trading_date_i] - ffdata['RF'][st_date:trading_date_i])
-            X1 = ffdata['Mkt-RF'][st_date:trading_date_i]
-            X1 = sm.add_constant(X1)
-            OLS_model1 = sm.OLS(Y1, X1).fit()
-            residual_mat1[num_i*500+num_j, :] = list(OLS_model1.resid)[l-1260:l]
-            params_mat1[num_i*500+num_j, :] = list(OLS_model1.params)[1:]
-            num_j += 1
+        #   Y1 = list(df_return[code_i][st_id:trading_date_i] - ffdata['RF'][st_id:trading_date_i])
+        #    X1 = ffdata['Mkt-RF'][st_id:trading_date_i]
+        #    X1 = sm.add_constant(X1)
+        #    OLS_model1 = sm.OLS(Y1, X1).fit()
+        #    residual_mat1[num_i*500+num_j, :] = list(OLS_model1.resid)[l-1260:l]
+        #    params_mat1[num_i*500+num_j, :] = list(OLS_model1.params)[1:]
+        #    num_j += 1
 
         st_id += 21
         num_i += 1
         time_ed = time.time()
         print("the {}th step costs {}".format(num_i, time_ed-time_st))
 
-    path_reid5 = os.path.join(dir, 'residual_mat5.npy')
-    np.save(path_reid5, residual_mat5)
-    path_reid1 = os.path.join(dir, 'residual_mat1.npy')
-    np.save(path_reid1, residual_mat1)
-    path_pram1 = os.path.join(dir, 'params_mat1.npy')
-    np.save(path_pram1, params_mat1)
-    path_pram5 = os.path.join(dir, 'params_mat5.npy')
-    np.save(path_pram5, params_mat5)
+    #path_reid5 = os.path.join(dir, 'residual_mat5.npy')
+    #np.save(path_reid5, residual_mat5)
+    #path_reid1 = os.path.join(dir, 'residual_mat1.npy')
+    #np.save(path_reid1, residual_mat1)
+    #path_pram1 = os.path.join(dir, 'params_mat1.npy')
+    #np.save(path_pram1, params_mat1)
+    #path_pram5 = os.path.join(dir, 'params_mat5.npy')
+    #np.save(path_pram5, params_mat5)
     path_ffvol5 = os.path.join(dir, 'ff5_vol.npy')
     np.save(path_ffvol5, ff_vol5)
     path_ffvol1 = os.path.join(dir, 'ff1_vol.npy')
@@ -341,7 +341,7 @@ if __name__ == '__main__':
     df_return = pd.read_csv('./returns1271.csv')
     ffdata = pd.read_csv('./ffdata_11062.csv')
     print('start regression')
-    dir = 'ff_model_data'
+    dir = 'ff_model_data_1260'
     N = 500
     num = 800
     last_num = 11602
