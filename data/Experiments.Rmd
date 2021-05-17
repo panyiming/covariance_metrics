@@ -239,6 +239,7 @@ external.regressors = NULL, archex = FALSE),
 distribution.model = "norm", 
 start.pars = list(), 
 fixed.pars = list())
+
 mspec = multispec(replicate(spec, n=N))
 
 # fit multi-univariate  garch
@@ -253,10 +254,9 @@ out.sample = 0, external.forecasts = list(mregfor = NULL, vregfor = NULL),
 cluster = NULL)
 vars = sigma(forecasts)
 
-
 # fit dcc-garch
-cDCC <- cdcc_estimation(ini.para=c(0.01,0.50),
-        ht, residuals, method='COV', ts=21)
+cDCC <- cdcc_estimation(ini.para=c(0.01,0.90),
+        ht, residuals, method='LS', ts=21)
 
 # predict average forcast covariance matrix
 cov_all = 0 
@@ -280,7 +280,7 @@ get_cov_ls<-function(ffdata){
         print(j)
         t1 = Sys.time()
         trading_i = st_id + sam_size
-        ffdata_i =ffdata[ff_ls][1:trading_i, ]
+        ffdata_i =ffdata[ff_ls][trading_i-1260:trading_i, ]
         cov_ff_i = cov_ff_pre(ffdata_i, 5, 21)
         if(j == 0){cov_ff_all = cov_ff_i}
         else{cov_ff_all<- rbind(cov_ff_all, cov_ff_i)}
@@ -290,6 +290,54 @@ get_cov_ls<-function(ffdata){
         print(t2-t1)
     }
 return(cov_ff_all)}
+
+cov_ff1_pre<-function(Rtns, N, n_head=21){
+# multi-univarite Garch specification:
+spec = ugarchspec(variance.model=list(
+model = "sGARCH", garchOrder = c(1, 1), submodel = NULL, 
+external.regressors = NULL, variance.targeting = FALSE), 
+mean.model = list(armaOrder = c(1, 1), 
+include.mean = TRUE, archm = FALSE, 
+archpow = 1, arfima = FALSE, 
+external.regressors = NULL, archex = FALSE), 
+distribution.model = "norm", 
+start.pars = list(), 
+fixed.pars = list())
+mspec = multispec(replicate(spec, n=N))
+
+# fit multi-univariate  garch
+fitlist = multifit(multispec=mspec, solver="hybrid",
+          data = Rtns) 
+ht<-sigma(fitlist)^2 
+residuals<-residuals(fitlist)
+
+# prediction diag element of variance.
+forecasts = multiforecast(fitlist, data = NULL, n.ahead = 21, n.roll = 0,
+out.sample = 0, external.forecasts = list(mregfor = NULL, vregfor = NULL),
+cluster = NULL)
+vars = sigma(forecasts)
+print(dim(vars))
+var_i = mean(vars[ , , 1])   
+return(var_i)}
+
+get_cov1_ls<-function(ffdata){
+    st_id = 6348
+    sam_size = 1260
+    j = 0
+    ff_ls = c('Mkt.RF', 'SMB')
+    cov_ff_all = matrix(rnorm(190), 190, 1)
+    while(st_id + sam_size + 21 <= 11602){
+        print(j)
+        t1 = Sys.time()
+        trading_i = st_id + sam_size
+        ffdata_i =ffdata[ff_ls][trading_i-1260:trading_i, ]
+        cov_ff_i = cov_ff1_pre(ffdata_i, 2, 21)
+        st_id <- st_id + 21
+        j <- j + 1
+        cov_ff_all[j, 1] =  cov_ff_i
+        t2 = Sys.time()
+        print(t2-t1)}
+    return(cov_ff_all)}
 ```
 
 
@@ -299,17 +347,22 @@ file_path = '~/Desktop/courses_term3/Master_project/data/ffdata_11062.csv'
 ffdata = read.csv(file_path)
 ff_ls = c('Mkt.RF', 'SMB', 'HML', 'RMW', 'CMA')
 cov_ff_all = get_cov_ls(ffdata)
+npySave('./Desktop/courses_term3/Master_project/data/ff_model_data_1260/ff5_vol_dcc.npy', cov_ff_all)
 ```
 
+```{r}
+cov_ff1_all = get_cov1_ls(ffdata)
+npySave('./Desktop/courses_term3/Master_project/data/ff_model_data_1260/ff1_vol_dcc.npy', cov_ff1_all)
+```
 
 
 
 
 # predict residual dcc-nl covariance matrix
 ```{r}
-dccnl_resid_cov_pre <- function(resid_matrix, N, num_trade, root_dir){
+dccnl_resid_cov_pre <- function(resid_matrix, N, num_trade, root_dir, first_id){
   res_all = c()
-  for(i in c(1:num_trade)){
+  for(i in c(first_id:num_trade)){
     print(i)
     t1 = Sys.time()
     st_sam  = (i-1) * 500 + 1
@@ -328,10 +381,10 @@ dccnl_resid_cov_pre <- function(resid_matrix, N, num_trade, root_dir){
 
 
 ```{r}
-N = 100
+resid1_matrix = npyLoad("./Desktop/courses_term3/Master_project/data/ff_model_data_1260/residual_mat1.npy")
+N = 500
 num_trade = 190
-resid5_matrix = npyLoad("./Desktop/courses_term3/Master_project/data/ff_model_data/residual_mat5.npy")
-root_dir = './Desktop/courses_term3/Master_project/data/ff_model_data/resid_dcc_cov5_100/'
-dccnl_resid_cov_pre(resid5_matrix, N, num_trade, root_dir)
+root_dir = './Desktop/courses_term3/Master_project/data/ff_model_data_1260/resid_dcc_cov1_500/'
+dccnl_resid_cov_pre(resid1_matrix, N, num_trade, root_dir, 1)
 ```
 
